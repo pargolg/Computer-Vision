@@ -1,0 +1,5 @@
+The first change to the extracredit file is that a Canny edge detector was used. This edge detector was thresholded by 33% of the image's median value. The images were preprocessed using this edge detector. This therefore detected more Harris Key points for blurrier images. Additionally, some other small tweaks were made to the existing algorithms that improved the accuracy. This included increasing the window size for computing the local maxima, increasing sigma for the gaussian filter in the MOPS algorithm, using a larger window size for MOPS, and scaling down by less for MOPS.
+
+These changes increased the AUC for yosemite from about 90% to about 92%. For the blurrier expample (the bikes images), the AUC increased from 33% to 90%. The reasoning for this is that the blurrier bike images now have more detectable harris points.
+
+When running this extracredit.py file, use the custom descriptor type. The custom algorithm is what modifies the MOPS values. The Harris detector has been modified to make the other changes, so leave the Keypoint Type as Harris. All the other values also remain the same.
