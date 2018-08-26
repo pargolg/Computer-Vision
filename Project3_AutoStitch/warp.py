@@ -24,8 +24,6 @@ def warpLocal(src, uv):
     img2_fg = cv2.bitwise_and(warped,warped,mask = mask)
     return img2_fg
 
-vector = [None]*3
-
 
 def computeSphericalWarpMappings(dstShape, f, k1, k2):
     '''
@@ -67,33 +65,29 @@ def computeSphericalWarpMappings(dstShape, f, k1, k2):
     # BEGIN TODO 1
     # add code to apply the spherical correction, i.e.,
     # compute the Euclidean coordinates,
-    # and project the point to the z=1 plane at (xt/zt, yt/zt, 1),
+    # and project the point to the z=1 plane at (xt/zt,yt/zt,1),
     # then distort with radial distortion coefficients k1 and k2
     # Use xf, yf as input for your code block and compute xt, yt
     # as output for your code. They should all have the shape
     # (img_height, img_width)
     # TODO-BLOCK-BEGIN
-    #Compute the euclidean coordinates
-    vector[0] = np.sin(xf)* np.cos(yf)
-    vector[1] = np.sin(yf)
-    vector[2] = np.cos(xf)*np.cos(yf)
-
-    #Projection
-    vector[0] = vector[0] / vector[2]
-    vector[1] = vector[1] / vector[2]
-    vector[2] = 1
-
-    ## Distort
-    radiusDist = vector[0] ** 2 + vector[1] ** 2
-    xt = vector[0] * (1 + k1 * radiusDist + k2 * radiusDist * radiusDist)
-    yt = vector[1] * (1 + k1 * radiusDist + k2 * radiusDist * radiusDist)
-
+    x_hat = np.sin(xf) * np.cos(yf)
+    y_hat = np.sin(yf)
+    z_hat = np.cos(xf) * np.cos(yf)
+    
+    x_norm = x_hat / z_hat
+    y_norm = y_hat / z_hat
+    
+    r2 = x_norm ** 2 + y_norm ** 2
+    xt = x_norm * (1 + k1 * r2 + k2 * r2 ** 2)
+    yt = y_norm * (1 + k1 * r2 + k2 * r2 ** 2)
+    
     # TODO-BLOCK-END
     # END TODO
     # Convert back to regular pixel coordinates
     xn = 0.5 * dstShape[1] + xt * f
     yn = 0.5 * dstShape[0] + yt * f
-    uvImg = np.dstack((xn, yn))
+    uvImg = np.dstack((xn,yn))
     return uvImg
 
 

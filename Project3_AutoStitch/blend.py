@@ -29,7 +29,25 @@ def imageBoundingBox(img, M):
     """
     #TODO 8
     #TODO-BLOCK-BEGIN
-    raise Exception("TODO in blend.py not implemented")
+    corner1 = np.array((0,0,1))
+    corner2 = np.array((0,img.shape[0]-1,1))
+    corner3 = np.array((img.shape[1]-1,img.shape[0]-1,1))
+    corner4 = np.array((img.shape[1]-1,0,1))
+
+    p1 = np.dot(M, corner1)
+    p2 = np.dot(M, corner2)
+    p3 = np.dot(M, corner3)
+    p4 = np.dot(M, corner4)
+    
+    p1 /= p1[2]
+    p2 /= p2[2]
+    p3 /= p3[2]
+    p4 /= p4[2]
+    
+    minX = min(p1[0],p2[0],p3[0],p4[0])
+    minY = min(p1[1],p2[1],p3[1],p4[1])
+    maxX = max(p1[0],p2[0],p3[0],p4[0])
+    maxY = max(p1[1],p2[1],p3[1],p4[1])
     #TODO-BLOCK-END
     return int(minX), int(minY), int(maxX), int(maxY)
 
@@ -41,16 +59,45 @@ def accumulateBlend(img, acc, M, blendWidth):
          acc: portion of the accumulated image where img should be added
          M: the transformation mapping the input image to the accumulator
          blendWidth: width of blending function. horizontal hat function
+
        OUTPUT:
          modify acc with weighted copy of img added where the first
          three channels of acc record the weighted sum of the pixel colors
          and the fourth channel of acc records a sum of the weights
+
     """
     # BEGIN TODO 10
     # Fill in this routine
     #TODO-BLOCK-BEGIN
-    raise Exception("TODO in blend.py not implemented")
-    #TODO-BLOCK-END
+    height, width, channel = img.shape
+
+    #Normalization to remove brightness.
+    for chan in range(3):
+        c_max = np.max(img[:, :, chan])
+
+        c_min = np.min(img[:, :, chan])
+        ranging = c_max - c_min
+        img[:, :, chan] = int((float(img[:, :, chan] - c_min) / float(ranging)) * 255)
+
+    addon = np.zeros(acc.shape)
+
+    alpha = np.ones((height ,width))
+    for c in range(blendWidth):
+        alpha[:, c] = [float(c) / blendWidth] * height
+        alpha[:, width - c - 1] = [float(c) / blendWidth] * height
+
+
+    feathering = np.zeros((height, width, channel + 1))
+    for chan in range(3):
+        feathering[:, :, chan] = img[:, :, chan] * alpha
+    feathering[:, :, -1] = alpha
+
+    for chan in range(4):
+        addon[:, :, chan] = cv2.warpPerspective(feathering[:, :, chan], M, dsize=(acc.shape[1], acc.shape[0]), flags= cv2.INTER_LINEAR)
+
+    acc += addon
+
+#TODO-BLOCK-END
     # END TODO
 
 
@@ -65,7 +112,15 @@ def normalizeBlend(acc):
     # BEGIN TODO 11
     # fill in this routine..
     #TODO-BLOCK-BEGIN
-    raise Exception("TODO in blend.py not implemented")
+    img = np.zeros((acc.shape[0], acc.shape[1], 4), dtype=np.uint8)
+    for i in range(acc.shape[0]):
+        for j in range(acc.shape[1]):
+            for k in range(3):
+                if acc[i,j,3] != 0:
+                    img[i,j,k] = int(float(acc[i,j,k]) / float(acc[i,j,3]))
+                else:
+                    img[i,j,k] = 0
+            img[i,j,3] = 1
     #TODO-BLOCK-END
     # END TODO
     return img
@@ -107,7 +162,11 @@ def getAccSize(ipv):
         # BEGIN TODO 9
         # add some code here to update minX, ..., maxY
         #TODO-BLOCK-BEGIN
-        raise Exception("TODO in blend.py not implemented")
+        minX_tmp, minY_tmp, maxX_tmp, maxY_tmp = imageBoundingBox(img, M)
+        minX = min(minX, minX_tmp)
+        minY = min(minY, minY_tmp)
+        maxX = max(maxX, maxX_tmp)
+        maxY = max(maxY, maxY_tmp)
         #TODO-BLOCK-END
         # END TODO
 
@@ -199,7 +258,8 @@ def blendImages(ipv, blendWidth, is360=False, A_out=None):
     # Note: warpPerspective does forward mapping which means A is an affine
     # transform that maps accumulator coordinates to final panorama coordinates
     #TODO-BLOCK-BEGIN
-    raise Exception("TODO in blend.py not implemented")
+    if is360:
+        A = computeDrift(x_init, y_init, x_final, y_final, width)
     #TODO-BLOCK-END
     # END TODO
 
@@ -211,5 +271,32 @@ def blendImages(ipv, blendWidth, is360=False, A_out=None):
         compImage, A, (outputWidth, accHeight), flags=cv2.INTER_LINEAR
     )
 
-    return croppedImage
+    # #extra credit cropout the dark margins
+    # image = croppedImage
+    #
+    # imgray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    #
+    # # Set threshold
+    # # th1 = cv2.adaptiveThreshold(imgray,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,1023,0)
+    # _, th2 = cv2.threshold(imgray, 8, 255, cv2.THRESH_BINARY)
+    # contours, hierarchy = cv2.findContours(th2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    #
+    # # Find with the largest rectangle
+    # areas = [cv2.contourArea(contour) for contour in contours]
+    # max_index = np.argmax(areas)
+    # cnt = contours[max_index]
+    # x, y, w, h = cv2.boundingRect(cnt)
+    #
+    # # Ensure bounding rect should be at least 16:9 or taller
+    # if w / h > 16 / 9:
+    #     # increase top and bottom margin
+    #     newHeight = w / 16 * 9
+    #     y = y - (newHeight - h) / 2
+    #     h = newHeight
+    #
+    # # Crop with the largest rectangle
+    # crop = image[y:y + h, x:x + w, :]
+
+
+    return crop
 

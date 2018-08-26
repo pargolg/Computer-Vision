@@ -18,8 +18,9 @@ DEFAULT_K2 = 0.26
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Panorama Maker")
+    parser = argparse.ArgumentParser(description = "Panorama Maker")
     parser.add_argument(
+
         "--extra-credit", dest="ec", action='store_true',
         help="Flag to toggle extra credit features"
     )
